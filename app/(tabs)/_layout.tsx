@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, usePathname } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
 
@@ -8,8 +8,14 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
-export default function TabLayout() {
+export default function TabLayout({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
+  const pathname = usePathname(); // ใช้ usePathname เพื่อดึงเส้นทางปัจจุบัน
+
+  // ถ้าอยู่ในหน้า login ให้ซ่อน Bottom Tab
+  if (pathname.startsWith("/(auth)")) {
+    return <>{children}</>; // ไม่แสดง bottom tab bar สำหรับหน้า login
+  }
 
   return (
     <Tabs
