@@ -5,7 +5,6 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ThemedText } from "../../components/ThemedText";
@@ -21,6 +20,7 @@ export default function SetDisplayNameScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [displayName, setDisplayName] = useState("");
+  const studentID = user?.username || ""; // ใช้ studentID จาก user ที่เก็บใน store
   const [error, setError] = useState("");
 
   const validateDisplayName = async () => {
@@ -46,8 +46,40 @@ export default function SetDisplayNameScreen() {
       return;
     }
 
-    useAuthStore.getState().setUser({ ...user!, displayName });
-    router.replace("/(tabs)/HomeScreen");
+    // ตรวจสอบว่า displayName มีค่าแล้วหรือไม่
+    if (!displayName.trim()) {
+      setError("กรุณาใส่ชื่อแสดง");
+      return;
+    }
+
+    // ส่งข้อมูลไปที่ backend เพื่ออัปเดตชื่อแสดง
+    try {
+      const response = await fetch(
+        "http://192.168.1.33:5000/api/auth/set-display-name",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: studentID, // ส่ง userId ของผู้ใช้
+            displayName: displayName,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        // ถ้าอัปเดตสำเร็จ
+        useAuthStore.getState().setUser({ ...user!, displayName });
+        router.replace("/(tabs)/HomeScreen");
+      } else {
+        // ถ้ามีข้อผิดพลาดจาก server
+        setError(data.error || "เกิดข้อผิดพลาดในการอัปเดตชื่อแสดง");
+      }
+    } catch (err) {
+      setError("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
   };
 
   return (

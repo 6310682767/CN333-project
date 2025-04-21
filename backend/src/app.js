@@ -8,17 +8,20 @@ dotenv.config();
 // สร้าง app
 const app = express();
 
-// เชื่อมต่อ MongoDB
-connectDB();
-
 // Middleware
 app.use(express.json()); // ให้รองรับ JSON จาก body request
 
 // Routes
 app.use("/api/auth", authRoutes); // เชื่อมต่อกับ routes ของ auth
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-// npybird AV5yghNaKa64y1KI
+// เชื่อมต่อกับฐานข้อมูลแล้วเริ่มรันเซิร์ฟเวอร์
+connectDB()
+  .then(() => {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ Server running at http://0.0.0.0:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database connection failed:", err);
+  });

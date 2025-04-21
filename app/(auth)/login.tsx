@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useNavigation } from "expo-router";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { ThemedText } from "../../components/ThemedText";
+import axios from "axios";
 
 const backgroundImage = require("../../assets/images/login-background.png");
 
@@ -28,9 +29,8 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
+    navigation.setOptions({ headerShown: false });
+    useAuthStore.getState().loadUserFromStorage();
   }, [navigation]);
 
   const handleLogin = async () => {
@@ -42,37 +42,25 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      const response = await fetch(
-        "https://restapi.tu.ac.th/api/v1/auth/Ad/verify",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Application-Key":
-              "TUc92ac9800ebb78fa4e7a8b0adbed88c29121fb7988c0a29ae3d5c6026e27fa6c510d2d6a5eceeee7fb64f2f478b94015",
-          },
-          body: JSON.stringify({
-            UserName: studentID,
-            PassWord: citizenID,
-          }),
-        }
-      );
+      const res = await axios.post("http:192.168.1.33:5000/api/auth/login", {
+        username: studentID,
+        password: citizenID,
+      });
 
-      const data = await response.json();
+      const user = res.data.user;
+      useAuthStore.getState().setUser(user); // เก็บ user ไว้ใน store
 
-      if (data.status === true) {
-        // บันทึกข้อมูลผู้ใช้ใน store และ AsyncStorage
-        useAuthStore.getState().setUser({ studentID });
-        // ไปหน้าเลือก campus
+      if (!user.displayName || !user.campus) {
         router.replace("/(auth)/select-campus");
       } else {
-        Alert.alert(
-          "เข้าสู่ระบบล้มเหลว",
-          data.message || "กรุณาตรวจสอบข้อมูลอีกครั้ง"
-        );
+        router.replace("/(tabs)/HomeScreen");
       }
-    } catch (err) {
-      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } catch (err: any) {
+      console.error("Login failed:", err.message);
+      Alert.alert(
+        "เข้าสู่ระบบล้มเหลว",
+        err.response?.data?.error || "กรุณาลองใหม่"
+      );
     } finally {
       setLoading(false);
     }
