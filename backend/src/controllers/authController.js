@@ -3,6 +3,10 @@ const { User } = require("../models/user");
 
 const TU_API_URL = "https://restapi.tu.ac.th/api/v1/auth/Ad/verify";
 
+const BAD_WORDS = ["fuck", "shit", "bitch", "asshole", "bastard"];
+const SPECIAL_CHAR_REGEX = /[^\w\s\u0E00-\u0E7F]/;
+const THAI_CHAR_REGEX = /[\u0E00-\u0E7F]/;
+
 // ทำการ login ผ่าน TU API
 const loginWithTUAPI = async (req, res) => {
   const { username, password } = req.body;
@@ -71,3 +75,33 @@ const loginWithTUAPI = async (req, res) => {
 };
 
 module.exports = { loginWithTUAPI };
+
+exports.setDisplayName = async (req, res) => {
+  const { username, displayName } = req.body;
+
+  if (!displayName?.trim())
+    return res.status(400).json({ error: "กรุณาใส่ชื่อแสดง" });
+  if (THAI_CHAR_REGEX.test(displayName))
+    return res.status(400).json({ error: "ห้ามใช้ภาษาไทยในชื่อแสดง" });
+  if (displayName.length > 20)
+    return res.status(400).json({ error: "ชื่อห้ามยาวเกิน 20 ตัวอักษร" });
+  if (BAD_WORDS.some((word) => displayName.toLowerCase().includes(word)))
+    return res.status(400).json({ error: "ชื่อมีคำไม่สุภาพ" });
+  if (SPECIAL_CHAR_REGEX.test(displayName))
+    return res.status(400).json({ error: "ห้ามใช้อักขระพิเศษหรืออีโมจิ" });
+
+  const existing = await User.findOne({ displayName });
+  if (existing) {
+    return res.status(400).json({ error: "ชื่อผู้ใช้นี้ถูกใช้แล้ว" });
+  }
+
+  const user = await User.findOneAndUpdate(
+    { username },
+    { displayName },
+    { new: true }
+  );
+
+  if (!user) return res.status(404).json({ error: "ไม่พบผู้ใช้นี้" });
+
+  res.json({ message: "อัปเดตชื่อแสดงสำเร็จ", user });
+};

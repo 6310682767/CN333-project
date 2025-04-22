@@ -1,6 +1,7 @@
 const express = require("express");
 const { loginWithTUAPI } = require("../controllers/authController"); // เราจะใช้ controller ที่ทำงานร่วมกับ TU API
 const { User } = require("../models/user");
+const { setDisplayName } = require("../controllers/authController");
 
 const router = express.Router();
 
