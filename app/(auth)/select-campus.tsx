@@ -14,10 +14,44 @@ export default function SelectCampusScreen() {
     setSelectedCampus(campus);
   };
 
-  const handleNext = () => {
-    if (selectedCampus) {
-      useAuthStore.getState().setUser({ ...user!, campus: selectedCampus });
-      router.replace("/(auth)/display-name");
+  const handleNext = async () => {
+    if (!selectedCampus || !user) return;
+
+    try {
+      const response = await fetch(
+        "http://192.168.1.33:5000/api/auth/set-campus",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: user.username, // ใช้รหัสนักศึกษาเหมือนหน้า display-name
+            campus: selectedCampus,
+          }),
+        }
+      );
+
+      // const data = await response.json();
+      const text = await response.text();
+      console.log("📦 Raw response from backend:", text);
+
+      try {
+        const data = JSON.parse(text);
+        if (response.ok) {
+          useAuthStore.getState().setUser({ ...user, campus: selectedCampus });
+          router.replace("/(auth)/display-name");
+        } else {
+          console.error("❌ Server error:", data.error || "Unknown error");
+        }
+      } catch (err) {
+        console.error(
+          "❌ JSON parsing error or HTML response:",
+          (err as Error).message
+        );
+      }
+    } catch (err) {
+      console.error("❌ Error in handleNext:", (err as Error).message);
     }
   };
 

@@ -5,37 +5,21 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ThemedText } from "../../components/ThemedText";
 import { useAuthStore } from "../../stores/useAuthStore";
 
-const BAD_WORDS = ["fuck", "shit", "bitch", "asshole", "bastard"];
-// ห้ามใช้ตัวอักษรพิเศษหรืออีโมจิ
-const SPECIAL_CHAR_REGEX = /[^\w\s\u0E00-\u0E7F]/;
-// ห้ามใช้ภาษาไทย
-const THAI_CHAR_REGEX = /[\u0E00-\u0E7F]/;
-
 export default function SetDisplayNameScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [displayName, setDisplayName] = useState("");
+  const studentID = user?.username || ""; // ใช้ studentID จาก user ที่เก็บใน store
   const [error, setError] = useState("");
 
   const validateDisplayName = async () => {
     if (!displayName.trim()) return "กรุณาใส่ชื่อแสดง";
-    if (THAI_CHAR_REGEX.test(displayName)) return "ห้ามใช้ภาษาไทยในชื่อแสดง";
     if (displayName.length > 20) return "ชื่อห้ามยาวเกิน 20 ตัวอักษร";
-    if (BAD_WORDS.some((word) => displayName.includes(word)))
-      return "ชื่อมีคำไม่สุภาพ";
-    if (SPECIAL_CHAR_REGEX.test(displayName))
-      return "ห้ามใช้อักขระพิเศษหรืออีโมจิ";
-
-    // Mock ตรวจชื่อซ้ำ
-    const existingNames = ["ต้น", "ใบเฟิร์น", "admin"];
-    if (existingNames.includes(displayName)) return "ชื่อผู้ใช้นี้ถูกใช้แล้ว";
-
     return "";
   };
 
@@ -46,8 +30,40 @@ export default function SetDisplayNameScreen() {
       return;
     }
 
-    useAuthStore.getState().setUser({ ...user!, displayName });
-    router.replace("/(tabs)/HomeScreen");
+    // ตรวจสอบว่า displayName มีค่าแล้วหรือไม่
+    if (!displayName.trim()) {
+      setError("กรุณาใส่ชื่อแสดง");
+      return;
+    }
+
+    // ส่งข้อมูลไปที่ backend เพื่ออัปเดตชื่อแสดง
+    try {
+      const response = await fetch(
+        "http://192.168.1.33:5000/api/auth/set-display-name",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: studentID, // ส่ง userId ของผู้ใช้
+            displayName: displayName,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        // ถ้าอัปเดตสำเร็จ
+        useAuthStore.getState().setUser({ ...user!, displayName });
+        router.replace("/(tabs)/HomeScreen");
+      } else {
+        // ถ้ามีข้อผิดพลาดจาก server
+        setError(data.error || "เกิดข้อผิดพลาดในการอัปเดตชื่อแสดง");
+      }
+    } catch (err) {
+      setError("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
   };
 
   return (
