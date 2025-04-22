@@ -3,7 +3,7 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
-  studentID: string;
+  username: string;
   campus?: string;
   displayName?: string;
 };
