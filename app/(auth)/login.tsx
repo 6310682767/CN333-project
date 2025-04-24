@@ -42,7 +42,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      const res = await axios.post("http:192.168.1.33:5000/api/auth/login", {
+      const res = await axios.post("http://192.168.1.33:5000/api/auth/login", {
         username: studentID,
         password: citizenID,
       });

@@ -1,109 +1,181 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity } from "react-native";
+// home.tsx
+import React, { useRef, useState, useEffect } from "react";
+import {
+  View,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  findNodeHandle,
+  UIManager,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import useFeedStore from "../../stores/useFeedStore";
 import { ThemedText } from "@/components/ThemedText";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Modal, TouchableWithoutFeedback } from "react-native"; // Add Modal import for dropdown
+import SidebarMenu from "@/components/SlidebarMenu";
+import PostFilterMenu from "@/components/PostFilterMenu";
+import { usePosts } from "@/hooks/usePost";
+import axios from "axios";
+
+// Define the type for posts
+type Post = {
+  _id: string;
+  createdAt: string;
+  authorName: string;
+  community: string;
+  target: string;
+  content: string;
+  images?: string[];
+  likes: number;
+  comments?: { _id: string }[]; // or just number, depending on your schema
+};
 
 export default function FeedScreen() {
-  const posts = useFeedStore((state) => state.posts);
   const router = useRouter();
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("โพสต์สำหรับคุณ");
+  const [selectedFilter, setSelectedFilter] = useState("latest");
+  const [campus, setCampus] = useState<string | undefined>(undefined);
+  const [community, setCommunity] = useState<string | undefined>(undefined);
 
-  const toggleModal = () => setModalVisible(!modalVisible);
-  const handleOptionSelect = (option: string) => {
-    setSelectedOption(option);
-    setModalVisible(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [postFilterVisible, setPostFilterVisible] = useState(false);
+  const [TUPositionX, setTUPositionX] = useState(0);
+  const [TUPositionY, setTUPositionY] = useState(0);
+  const TUTextRef = useRef(null);
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [load, setLoad] = useState(true);
+  const [error, setError] = useState("");
+
+  // ✅ ดึงข้อมูลจาก custom hook
+  const { posts: fetchedPosts, loading } = usePosts(
+    selectedFilter,
+    campus,
+    community
+  );
+
+  const togglePostFilter = () => {
+    if (TUTextRef.current) {
+      const handle = findNodeHandle(TUTextRef.current);
+      if (handle) {
+        UIManager.measureInWindow(handle, (x, y) => {
+          setTUPositionX(x);
+          setTUPositionY(y);
+          setPostFilterVisible((prev) => !prev); // Toggle visibility
+        });
+      }
+    }
   };
+
+  const handleOptionSelect = (option: string) => {
+    const filterMap: Record<string, string> = {
+      สำหรับคุณ: "personalized",
+      เป็นที่นิยม: "popular",
+      ติดดาว: "starred",
+      ล่าสุด: "latest",
+    };
+
+    const newFilter = filterMap[option]; // ใช้ trim() เพื่อลบช่องว่างที่ไม่จำเป็น
+
+    setSelectedFilter(newFilter); // เปลี่ยนค่า selectedFilter
+    setPostFilterVisible(false); // ปิดเมนู
+  };
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get("http://192.168.1.33:5000/api/posts", {
+          params: {
+            filter: selectedFilter, // เปลี่ยนเป็น "popular", "starred" ฯลฯ
+            campus: campus, // ใส่ค่า campus ที่ต้องการ
+            community: community, // ใส่ค่า community ที่ต้องการ
+          },
+        });
+        setPosts(response.data);
+        console.log("Response data: ", response.data); // พิมพ์ข้อมูลที่ได้รับจาก API
+      } catch (err) {
+        console.error("Error fetching posts: ", err); // เพิ่มคำสั่งนี้เพื่อดูข้อผิดพลาดใน console
+        setError("ไม่สามารถดึงข้อมูลโพสต์ได้");
+      } finally {
+        setLoad(false);
+      }
+    };
+
+    fetchPosts();
+  }, [selectedFilter, campus, community]);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
+
+  if (error) {
+    return <ThemedText>{error}</ThemedText>;
+  }
 
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
       <SafeAreaView style={{ flex: 0, backgroundColor: "#eab308" }}>
         <View className="bg-yellow-500 px-4 pt-4 flex-row items-center justify-between">
-          <View className="flex-row items-center ">
-            <TouchableOpacity>
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => setMenuVisible(true)}>
               <Ionicons name="menu" size={28} color="white" />
             </TouchableOpacity>
 
             {/* TU TALK and triangle icon */}
             <TouchableOpacity
-              onPress={toggleModal}
+              onPress={togglePostFilter}
               className="flex-row items-center"
             >
-              <ThemedText
-                className="text-white text-2xl mr-2 ml-5"
-                type="title"
-              >
-                TU TALK
-              </ThemedText>
+              <View ref={TUTextRef}>
+                <ThemedText
+                  className="text-white text-2xl mr-2 ml-5"
+                  type="title"
+                >
+                  TU TALK
+                </ThemedText>
+              </View>
               <Ionicons name="chevron-down" size={20} color="white" />
             </TouchableOpacity>
           </View>
 
           {/* Search Icon */}
-          <View className="flex-row items-center justify-end">
-            <TouchableOpacity>
-              <Ionicons name="search-outline" size={22} color="white" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity>
+            <Ionicons name="search-outline" size={22} color="white" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
 
-      {/* Modal for dropdown */}
-      {modalVisible && (
-        <Modal
-          transparent={true}
-          animationType="fade"
-          visible={modalVisible}
-          onRequestClose={toggleModal}
-        >
-          <TouchableWithoutFeedback onPress={toggleModal}>
-            <View className="flex-1 justify-center items-center bg-black opacity-50">
-              <TouchableWithoutFeedback>
-                <View className="bg-white p-4 rounded-lg shadow-lg">
-                  <TouchableOpacity
-                    onPress={() => handleOptionSelect("โพสต์สำหรับคุณ")}
-                  >
-                    <Text className="text-black py-2 px-4">โพสต์สำหรับคุณ</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleOptionSelect("เป็นที่นิยม")}
-                  >
-                    <Text className="text-black py-2 px-4">เป็นที่นิยม</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleOptionSelect("ติดดาว")}
-                  >
-                    <Text className="text-black py-2 px-4">ติดดาว</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleOptionSelect("ล่าสุด")}
-                  >
-                    <Text className="text-black py-2 px-4">ล่าสุด</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      )}
+      {/* Post Filter Dropdown */}
+      <PostFilterMenu
+        visible={postFilterVisible}
+        onClose={() => setPostFilterVisible(false)}
+        onOptionSelect={handleOptionSelect}
+        leftOffset={TUPositionX}
+        topOffset={TUPositionY}
+      />
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {posts.length === 0 ? (
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#eab308"
+            style={{ marginTop: 50 }}
+          />
+        ) : fetchedPosts.length === 0 ? (
           <ThemedText className="text-center text-gray-500 mt-10">
             ยังไม่มีโพสต์
           </ThemedText>
         ) : (
           posts.map((post) => (
             <TouchableOpacity
-              key={post.id}
+              key={post._id}
               onPress={() =>
-                router.push({ pathname: "/post/[id]", params: { id: post.id } })
+                router.push({
+                  pathname: "/post/[id]",
+                  params: { id: post._id },
+                })
               }
               className="mb-4 p-4 border border-gray-200 rounded-lg"
             >
@@ -113,7 +185,7 @@ export default function FeedScreen() {
 
               <View className="flex-row items-center mb-1">
                 <Image
-                  source={{ uri: `https://i.pravatar.cc/150?u=${post.id}` }}
+                  source={{ uri: `https://i.pravatar.cc/150?u=${post._id}` }}
                   className="w-6 h-6 rounded-full mr-2"
                 />
                 <ThemedText className="text-sm font-medium text-black">
@@ -125,19 +197,19 @@ export default function FeedScreen() {
                 {post.community}
               </ThemedText>
               <ThemedText className="text-sm text-gray-500 mb-2">
-                👁 {post.target}
+                👁 {post.target || "ทุกคน"}
               </ThemedText>
               <ThemedText className="text-base text-black mb-2">
                 {post.content}
               </ThemedText>
 
-              {post.images.length > 0 && (
+              {(post.images ?? []).length > 0 && (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   className="mb-2"
                 >
-                  {post.images.map((uri, index) => (
+                  {post.images?.map((uri, index) => (
                     <Image
                       key={index}
                       source={{ uri }}
@@ -158,7 +230,7 @@ export default function FeedScreen() {
                 <View className="flex-row items-center">
                   <Ionicons name="chatbubble-outline" size={18} color="gray" />
                   <ThemedText className="ml-1 text-gray-700 text-sm">
-                    {post.comments.length}
+                    {post.comments?.length || 0}
                   </ThemedText>
                 </View>
               </View>
@@ -166,6 +238,12 @@ export default function FeedScreen() {
           ))
         )}
       </ScrollView>
+
+      {/* Sidebar Menu */}
+      <SidebarMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }
