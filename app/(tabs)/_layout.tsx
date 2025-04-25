@@ -34,20 +34,49 @@ export default function TabLayout({ children }: { children: React.ReactNode }) {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: "Home",
+          title: "หน้าหลัก",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="chat"
         options={{
-          title: "Explore",
+          title: "แชท",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="message.fill" color={color} />
+          ),
+          tabBarBadge: 3, // จำนวนข้อความใหม่ที่ยังไม่ได้อ่าน
+        }}
+      />
+      <Tabs.Screen
+        name="create-post"
+        options={{
+          title: "สร้าง",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="plus.square.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notification"
+        options={{
+          title: "แจ้งเตือน",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="bell.fill" color={color} />
+          ),
+          tabBarBadge: 2, // จำนวนแจ้งเตือนใหม่
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "โปรไฟล์",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="person.fill" color={color} />
           ),
         }}
       />

@@ -42,7 +42,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      const res = await axios.post("http:192.168.1.33:5000/api/auth/login", {
+      const res = await axios.post("http://192.168.1.33:5000/api/auth/login", {
         username: studentID,
         password: citizenID,
       });
@@ -53,7 +53,7 @@ export default function LoginScreen() {
       if (!user.displayName || !user.campus) {
         router.replace("/(auth)/select-campus");
       } else {
-        router.replace("/(tabs)/HomeScreen");
+        router.replace("/(tabs)/home");
       }
     } catch (err: any) {
       console.error("Login failed:", err.message);
@@ -79,7 +79,7 @@ export default function LoginScreen() {
             style={{ flex: 1 }}
             keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           >
-            <View className="flex-1 justify-start items-center space-y-6 pt-16 px-6">
+            <View className="flex-1 justify-start items-center space-y-6 pt-36 px-6">
               <Image
                 source={require("../../assets/images/logo.png")}
                 className="w-48 h-48"

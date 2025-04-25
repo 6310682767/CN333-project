@@ -56,7 +56,7 @@ export default function SetDisplayNameScreen() {
       if (response.ok) {
         // ถ้าอัปเดตสำเร็จ
         useAuthStore.getState().setUser({ ...user!, displayName });
-        router.replace("/(tabs)/HomeScreen");
+        router.replace("/(tabs)/home");
       } else {
         // ถ้ามีข้อผิดพลาดจาก server
         setError(data.error || "เกิดข้อผิดพลาดในการอัปเดตชื่อแสดง");

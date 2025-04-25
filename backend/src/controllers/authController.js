@@ -69,8 +69,14 @@ const loginWithTUAPI = async (req, res) => {
     console.error("❌ Login Error:", err.message);
     if (err.response) {
       console.error("📨 TU API Error Response:", err.response.data);
+      return res.status(400).json({
+        error: err.response.data?.message || "เกิดข้อผิดพลาดในการล็อกอิน",
+      });
     }
-    res.status(500).json({ error: "เกิดข้อผิดพลาดในการล็อกอิน" });
+    const tuDescription = err.response?.data?.Description;
+    res
+      .status(500)
+      .json({ error: tuDescription || "เกิดข้อผิดพลาดในการล็อกอิน" });
   }
 };
 
