@@ -1,7 +1,6 @@
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getStorage } = require("firebase-admin/storage");
 const { v4: uuidv4 } = require("uuid");
-const path = require("path");
 const serviceAccount = require("./config/firebaseServiceAccountKey.json");
 
 // ✅ เรียกใช้ Firebase Admin

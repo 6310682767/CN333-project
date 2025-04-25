@@ -1,3 +1,4 @@
+// user.js
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
@@ -5,6 +6,10 @@ const userSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true }, // รหัสนักศึกษา
     studentNameTh: { type: String, required: true }, // ชื่อ-นามสกุล ภาษาไทย
     studentNameEn: { type: String, required: true }, // ชื่อ-นามสกุล ภาษาอังกฤษ
+    avatar: {
+      type: String,
+      default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    },
     displayName: { type: String, default: "" }, // ชื่อแสดง
     campus: { type: String, default: "" }, // วิทยาเขต
     email: { type: String, default: "" }, // อีเมล

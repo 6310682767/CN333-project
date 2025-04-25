@@ -8,13 +8,6 @@ const postController = require("../controllers/postController");
 router.get("/", postController.getFilteredPosts);
 
 // POST: สร้างโพสต์
-router.post(
-  "/create",
-  upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 5 },
-  ]),
-  postController.createPost
-);
+router.post("/create", postController.createPost);
 
 module.exports = router;

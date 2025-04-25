@@ -1,5 +1,5 @@
 // home.tsx
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -8,6 +8,7 @@ import {
   findNodeHandle,
   UIManager,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,16 +18,19 @@ import SidebarMenu from "@/components/SlidebarMenu";
 import PostFilterMenu from "@/components/PostFilterMenu";
 import { usePosts } from "@/hooks/usePost";
 import axios from "axios";
+import { Video, ResizeMode } from "expo-av";
 
 // Define the type for posts
 type Post = {
   _id: string;
   createdAt: string;
   authorName: string;
+  authorAvatar?: string;
   community: string;
   target: string;
   content: string;
   images?: string[];
+  videos?: string[];
   likes: number;
   comments?: { _id: string }[]; // or just number, depending on your schema
 };
@@ -47,6 +51,7 @@ export default function FeedScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [load, setLoad] = useState(true);
   const [error, setError] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false); // เพิ่ม state สำหรับการรีเฟรช
 
   // ✅ ดึงข้อมูลจาก custom hook
   const { posts: fetchedPosts, loading } = usePosts(
@@ -82,26 +87,33 @@ export default function FeedScreen() {
     setPostFilterVisible(false); // ปิดเมนู
   };
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await axios.get("http://192.168.1.33:5000/api/posts", {
-          params: {
-            filter: selectedFilter, // เปลี่ยนเป็น "popular", "starred" ฯลฯ
-            campus: campus, // ใส่ค่า campus ที่ต้องการ
-            community: community, // ใส่ค่า community ที่ต้องการ
-          },
-        });
-        setPosts(response.data);
-        console.log("Response data: ", response.data); // พิมพ์ข้อมูลที่ได้รับจาก API
-      } catch (err) {
-        console.error("Error fetching posts: ", err); // เพิ่มคำสั่งนี้เพื่อดูข้อผิดพลาดใน console
-        setError("ไม่สามารถดึงข้อมูลโพสต์ได้");
-      } finally {
-        setLoad(false);
-      }
-    };
+  const fetchPosts = useCallback(async () => {
+    try {
+      const response = await axios.get("http://192.168.1.33:5000/api/posts", {
+        params: {
+          filter: selectedFilter, // เปลี่ยนเป็น "popular", "starred" ฯลฯ
+          campus: campus, // ใส่ค่า campus ที่ต้องการ
+          community: community, // ใส่ค่า community ที่ต้องการ
+        },
+      });
+      setPosts(response.data);
+      console.log("Response data: ", response.data); // พิมพ์ข้อมูลที่ได้รับจาก API
+    } catch (err) {
+      console.error("Error fetching posts: ", err); // เพิ่มคำสั่งนี้เพื่อดูข้อผิดพลาดใน console
+      setError("ไม่สามารถดึงข้อมูลโพสต์ได้");
+    } finally {
+      setLoad(false);
+      setIsRefreshing(false); // หยุดการรีเฟรช
+    }
+  }, [selectedFilter, campus, community]);
 
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  // ฟังก์ชันที่ใช้สำหรับรีเฟรช
+  const onRefresh = useCallback(() => {
+    setIsRefreshing(true);
     fetchPosts();
   }, [selectedFilter, campus, community]);
 
@@ -156,7 +168,12 @@ export default function FeedScreen() {
         topOffset={TUPositionY}
       />
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        }
+      >
         {loading ? (
           <ActivityIndicator
             size="large"
@@ -183,52 +200,84 @@ export default function FeedScreen() {
                 {new Date(post.createdAt).toLocaleString()}
               </ThemedText>
 
-              <View className="flex-row items-center mb-1">
+              <View className="flex-row items-center mb-2">
                 <Image
-                  source={{ uri: `https://i.pravatar.cc/150?u=${post._id}` }}
-                  className="w-6 h-6 rounded-full mr-2"
+                  source={{
+                    uri:
+                      post.authorAvatar ||
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                  }}
+                  className="w-8 h-8 rounded-full mr-2"
                 />
                 <ThemedText className="text-sm font-medium text-black">
                   {post.authorName || "ไม่ระบุชื่อ"}
                 </ThemedText>
               </View>
 
-              <ThemedText className="text-sm font-semibold text-yellow-600">
+              <ThemedText className="text-sm font-semibold text-yellow-600 mb-1">
                 {post.community}
               </ThemedText>
               <ThemedText className="text-sm text-gray-500 mb-2">
                 👁 {post.target || "ทุกคน"}
               </ThemedText>
-              <ThemedText className="text-base text-black mb-2">
+              <ThemedText className="text-base text-black mb-3">
                 {post.content}
               </ThemedText>
 
+              {/* Images */}
               {(post.images ?? []).length > 0 && (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  className="mb-2"
+                  className="mb-3"
                 >
                   {post.images?.map((uri, index) => (
                     <Image
                       key={index}
                       source={{ uri }}
-                      className="w-32 h-32 mr-2 rounded"
+                      className="w-36 h-36 mr-3 rounded-lg"
                       resizeMode="cover"
                     />
                   ))}
                 </ScrollView>
               )}
 
-              <View className="flex-row items-center gap-4">
+              {/* Videos */}
+              {(post.videos ?? []).length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mb-3"
+                >
+                  {post.videos?.map((uri, index) => (
+                    <View
+                      key={index}
+                      className="w-72 h-48 mr-3 rounded-lg overflow-hidden bg-black"
+                    >
+                      <Video
+                        source={{ uri }}
+                        rate={1.0}
+                        volume={1.0}
+                        isMuted={false}
+                        resizeMode={ResizeMode.COVER}
+                        shouldPlay={false}
+                        useNativeControls
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+
+              <View className="flex-row items-center gap-5 mt-2">
                 <View className="flex-row items-center">
-                  <Ionicons name="heart-outline" size={18} color="gray" />
+                  <Ionicons name="heart-outline" size={20} color="gray" />
                   <ThemedText className="ml-1 text-gray-700 text-sm">
                     {post.likes}
                   </ThemedText>
                 </View>
                 <View className="flex-row items-center">
-                  <Ionicons name="chatbubble-outline" size={18} color="gray" />
+                  <Ionicons name="chatbubble-outline" size={20} color="gray" />
                   <ThemedText className="ml-1 text-gray-700 text-sm">
                     {post.comments?.length || 0}
                   </ThemedText>

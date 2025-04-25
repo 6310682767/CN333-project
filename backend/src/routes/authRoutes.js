@@ -1,3 +1,4 @@
+// authRoutes.js
 const express = require("express");
 const { loginWithTUAPI } = require("../controllers/authController"); // เราจะใช้ controller ที่ทำงานร่วมกับ TU API
 const { User } = require("../models/user");

@@ -1,6 +1,7 @@
 // postController.js
-const Post = require("../models/Post");
-const { uploadFileToFirebase } = require("../utils/firebase");
+const Post = require("../models/post");
+const { uploadFileToFirebase } = require("../firebase");
+const { User } = require("../models/user");
 
 // ดึงโพสต์
 exports.getFilteredPosts = async (req, res) => {
@@ -40,53 +41,22 @@ exports.getFilteredPosts = async (req, res) => {
 exports.createPost = async (req, res) => {
   console.log("📥 เข้ามาที่ createPost แล้ว");
   try {
-    const { content, community, target, authorName } = req.body;
-    const files = req.files;
+    const { content, community, target, authorName, images, videos } = req.body;
+    console.log("📄 body:", req.body);
 
-    let imageUrls = [];
-    let videoUrls = [];
-
-    // อัปโหลดภาพ
-    if (files?.images) {
-      imageUrls = await Promise.all(
-        files.images.map(
-          async (file) =>
-            await uploadFileToFirebase(
-              file.buffer,
-              file.originalname,
-              file.mimetype,
-              "images"
-            )
-        )
-      );
-    }
-
-    // อัปโหลดวิดีโอ
-    if (files?.videos) {
-      videoUrls = await Promise.all(
-        files.videos.map(
-          async (file) =>
-            await uploadFileToFirebase(
-              file.buffer,
-              file.originalname,
-              file.mimetype,
-              "videos"
-            )
-        )
-      );
-    }
-
+    // สร้างโพสต์ในฐานข้อมูล
     const newPost = new Post({
       content,
       community,
       target,
       authorName,
-      images,
-      videos,
+      images, // เก็บ URL ของภาพที่อัปโหลด
+      videos, // เก็บ URL ของวิดีโอที่อัปโหลด
     });
 
     await newPost.save();
-    res.status(201).json(newPost);
+    res.status(201).json(newPost); // ส่งโพสต์ที่ถูกสร้างไป
+    console.log("📥 สร้างโพสต์ใหม่ในฐานข้อมูลสำเร็จ", newPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในการสร้างโพสต์" });

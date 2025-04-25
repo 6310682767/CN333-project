@@ -65,13 +65,6 @@ export default function CreatePostScreen() {
     }
 
     try {
-      const formData = new FormData();
-
-      formData.append("content", content);
-      formData.append("community", community);
-      formData.append("target", target);
-      formData.append("authorName", user.displayName);
-
       // อัปโหลดรูปภาพ
       const imageURLs = [];
       for (let i = 0; i < images.length; i++) {
@@ -117,7 +110,6 @@ export default function CreatePostScreen() {
       );
 
       console.log("โพสต์สำเร็จ:", response.data);
-
       Alert.alert("โพสต์สำเร็จ!");
       reset();
       router.push("/home");
