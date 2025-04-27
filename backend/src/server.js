@@ -13,3 +13,10 @@ connectDB()
   .catch((err) => {
     console.error("Database connection failed:", err);
   });
+
+  const axios = require('axios');
+  async function getIp() {
+    const response = await axios.get('https://api.ipify.org?format=json');
+    console.log('Render IP:', response.data.ip);
+  }
+  getIp();
