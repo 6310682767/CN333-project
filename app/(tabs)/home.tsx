@@ -19,6 +19,7 @@ import PostFilterMenu from "@/components/PostFilterMenu";
 import { usePosts } from "@/hooks/usePost";
 import axios from "axios";
 import { Video, ResizeMode } from "expo-av";
+import { useFilterStore } from "@/stores/filterStore";
 
 // Define the type for posts
 type Post = {
@@ -60,6 +61,8 @@ export default function FeedScreen() {
     community
   );
 
+  const { selectedCampus, selectedCommunity } = useFilterStore(); // ดึงค่าที่เลือกจาก store
+
   const togglePostFilter = () => {
     if (TUTextRef.current) {
       const handle = findNodeHandle(TUTextRef.current);
@@ -92,8 +95,8 @@ export default function FeedScreen() {
       const response = await axios.get("http://192.168.1.33:5000/api/posts", {
         params: {
           filter: selectedFilter, // เปลี่ยนเป็น "popular", "starred" ฯลฯ
-          campus: campus, // ใส่ค่า campus ที่ต้องการ
-          community: community, // ใส่ค่า community ที่ต้องการ
+          campus: selectedCampus, // ใส่ค่า campus ที่ต้องการ
+          community: selectedCommunity, // ใส่ค่า community ที่ต้องการ
         },
       });
       setPosts(response.data);

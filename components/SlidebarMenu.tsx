@@ -1,14 +1,15 @@
 import { View, TouchableOpacity, Modal, Pressable } from "react-native";
-import { useState, useEffect } from "react";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { ScrollView } from "react-native";
+import { useEffect, useState } from "react";
+import { MaterialIcons } from "@expo/vector-icons";
 import { styled } from "nativewind";
 import Animated, {
   Easing,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { ScrollView } from "react-native";
 import { ThemedText } from "./ThemedText";
+import { useFilterStore } from "../stores/filterStore"; // ✅ นำเข้า store
 
 const StyledView = styled(View);
 const StyledText = styled(ThemedText);
@@ -35,12 +36,13 @@ export default function SidebarMenu({
   visible: boolean;
   onClose: () => void;
 }) {
-  const [selectedCampus, setSelectedCampus] = useState("รังสิต");
-  const [selectedCommunityRoom, setSelectedCommunityRoom] = useState("");
   const [showModal, setShowModal] = useState(visible);
 
-  // กำหนดให้ใช้การแอนิเมชัน slide จากด้านซ้าย
-  const slideAnim = useSharedValue(-400); // ค่าเริ่มต้นที่อยู่ทางซ้ายสุด
+  // ✅ ใช้ Zustand store แทน useState
+  const { selectedCampus, selectedCommunity, setCampus, setCommunity } =
+    useFilterStore();
+
+  const slideAnim = useSharedValue(-400);
 
   useEffect(() => {
     if (visible) {
@@ -54,7 +56,6 @@ export default function SidebarMenu({
         duration: 300,
         easing: Easing.out(Easing.ease),
       });
-      // ปิด modal หลังแอนิเมชันเสร็จ
       setTimeout(() => {
         setShowModal(false);
       }, 300);
@@ -63,11 +64,10 @@ export default function SidebarMenu({
 
   return (
     <Modal visible={showModal} transparent animationType="none">
-      {/* ปิดการใช้ "slide" ใน Modal */}
       <Pressable className="flex-1" onPress={onClose}>
         <Animated.View
           className="flex-1 bg-white w-[80%] p-5 rounded-tr-3xl rounded-br-3xl"
-          style={{ transform: [{ translateX: slideAnim }] }} // ใช้การแอนิเมชันในการเลื่อน
+          style={{ transform: [{ translateX: slideAnim }] }}
           onStartShouldSetResponder={() => true}
         >
           <StyledText className="text-3xl font-semibold mb-3 pt-14 text-gray-700">
@@ -77,7 +77,7 @@ export default function SidebarMenu({
             {campuses.map((c) => (
               <StyledTouchable
                 key={c}
-                onPress={() => setSelectedCampus(c)}
+                onPress={() => setCampus(c)} // ✅ set state ด้วย Zustand
                 className={`px-3 py-1 rounded-full border ${
                   selectedCampus === c
                     ? "bg-red-500 border-red-500"
@@ -102,9 +102,9 @@ export default function SidebarMenu({
             {communityRooms.map(({ icon, label }) => (
               <StyledTouchable
                 key={label}
-                onPress={() => setSelectedCommunityRoom(label)}
+                onPress={() => setCommunity(label)} // ✅ set state ด้วย Zustand
                 className={`flex-row items-center px-3 py-1 rounded-full border ${
-                  selectedCommunityRoom === label
+                  selectedCommunity === label
                     ? "bg-red-500 border-red-500"
                     : "bg-gray-100 border-gray-300"
                 }`}
@@ -112,14 +112,12 @@ export default function SidebarMenu({
                 <MaterialIcons
                   name={icon as any}
                   size={16}
-                  color={selectedCommunityRoom === label ? "#fff" : "#444"}
+                  color={selectedCommunity === label ? "#fff" : "#444"}
                   style={{ marginRight: 6 }}
                 />
                 <StyledText
                   className={`text-sm ${
-                    selectedCommunityRoom === label
-                      ? "text-white"
-                      : "text-gray-700"
+                    selectedCommunity === label ? "text-white" : "text-gray-700"
                   }`}
                 >
                   {label}

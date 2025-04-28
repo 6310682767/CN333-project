@@ -47,6 +47,8 @@ export default function LoginScreen() {
         password: citizenID,
       });
 
+      console.log(res); // แล้ว hover ดู res.data ว่า type เป็นอะไร
+
       const user = res.data.user;
       useAuthStore.getState().setUser(user); // เก็บ user ไว้ใน store
 
