@@ -5,10 +5,17 @@ import { useState, useEffect, useRef } from "react";
 import { useFonts } from "expo-font";
 import { ThemedText } from "../../components/ThemedText";
 
+
+
 export default function SelectCampusScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [selectedCampus, setSelectedCampus] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log("🔍 User data:", user);
+    console.log("🔍 Username:", user?.username);
+  }, [user]);
 
   const handleCampusSelection = (campus: string) => {
     setSelectedCampus(campus);
@@ -19,7 +26,7 @@ export default function SelectCampusScreen() {
 
     try {
       const response = await fetch(
-        "http://192.168.1.33:5000/api/auth/set-campus",
+        "https://cn333-project.onrender.com/api/auth/set-campus",
         {
           method: "POST",
           headers: {

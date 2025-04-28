@@ -39,7 +39,7 @@ export default function SetDisplayNameScreen() {
     // ส่งข้อมูลไปที่ backend เพื่ออัปเดตชื่อแสดง
     try {
       const response = await fetch(
-        "http://192.168.1.33:5000/api/auth/set-display-name",
+        "https://cn333-project.onrender.com/api/auth/set-display-name",
         {
           method: "POST",
           headers: {
